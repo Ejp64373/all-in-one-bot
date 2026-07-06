@@ -469,15 +469,21 @@ export const botConfig = {
 export function validateConfig(config) {
   const errors = [];
 
-  if (process.env.NODE_ENV !== 'production') {
-    logger.debug('Environment variables check:');
-    logger.debug('DISCORD_TOKEN exists:', !!process.env.DISCORD_TOKEN);
-    logger.debug('TOKEN exists:', !!process.env.TOKEN);
-    logger.debug('CLIENT_ID exists:', !!process.env.CLIENT_ID);
-    logger.debug('GUILD_ID exists:', !!process.env.GUILD_ID);
-    logger.debug('POSTGRES_HOST exists:', !!process.env.POSTGRES_HOST);
-    logger.debug('NODE_ENV:', process.env.NODE_ENV);
-  }
+  // Always log env var state so it's visible in production logs.
+  // Sensitive values are masked; non-sensitive values are shown as-is to aid
+  // debugging reference variable resolution failures.
+  logger.warn('--- Bot config env var check ---');
+  logger.warn('NODE_ENV:           ' + (process.env.NODE_ENV || '(not set)'));
+  logger.warn('DISCORD_TOKEN set:  ' + (process.env.DISCORD_TOKEN ? 'yes' : 'no'));
+  logger.warn('TOKEN set:          ' + (process.env.TOKEN ? 'yes' : 'no'));
+  logger.warn('CLIENT_ID:          ' + (process.env.CLIENT_ID || '(not set)'));
+  logger.warn('GUILD_ID:           ' + (process.env.GUILD_ID || '(not set)'));
+  logger.warn('POSTGRES_HOST:      ' + (process.env.POSTGRES_HOST || '(not set)'));
+  logger.warn('POSTGRES_USER:      ' + (process.env.POSTGRES_USER || '(not set)'));
+  logger.warn('POSTGRES_PASSWORD set: ' + (process.env.POSTGRES_PASSWORD ? 'yes' : 'no'));
+  logger.warn('POSTGRES_DB:        ' + (process.env.POSTGRES_DB || '(not set)'));
+  logger.warn('POSTGRES_PORT:      ' + (process.env.POSTGRES_PORT || '(not set)'));
+  logger.warn('--------------------------------');
 
   if (!process.env.DISCORD_TOKEN && !process.env.TOKEN) {
     errors.push("Bot token is required (DISCORD_TOKEN or TOKEN environment variable)");
@@ -504,7 +510,11 @@ export function validateConfig(config) {
 
 const configErrors = validateConfig(botConfig);
 if (configErrors.length > 0) {
-  logger.error("Bot configuration errors:", configErrors.join("\n"));
+  logger.error('=== Bot configuration errors (' + configErrors.length + ' total) ===');
+  configErrors.forEach((err, i) => {
+    logger.error(`  [${i + 1}] ${err}`);
+  });
+  logger.error('=== End of configuration errors ===');
   if (process.env.NODE_ENV === "production") {
     process.exit(1);
   }
